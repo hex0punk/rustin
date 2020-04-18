@@ -113,7 +113,9 @@ fn get_macho_symbols(macho: &MachO) {
     let syms = macho.symbols();
 
     for sym in syms {
-        println!("{:?}", sym.unwrap().1.type_str());
+        if sym.unwrap().0.contains("sym"){
+            println!("{:?}", sym.unwrap().0);
+        }
     }
 }
 

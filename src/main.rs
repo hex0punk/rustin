@@ -91,6 +91,9 @@ pub struct Protections {
         pub relro: Relro,
 }
 
+// pub struct ElfBin(Elf);
+// pub struct ElfMachO(MachO);
+
 #[derive(Debug)]
 pub struct Binary{
     pub filename: String,
@@ -104,16 +107,21 @@ impl Binary {
 
 }
 
-fn get_fe_symbols(elf: &Elf) {
-    let syms = &elf.syms;
-    println!("{:?}", syms);
+pub trait BinSymbols {
+    fn get_symbols(self);
 }
 
-fn get_macho_symbols(macho: &MachO) {
-    let syms = macho.symbols();
+impl BinSymbols for &Elf<'_> {
+    fn get_symbols(self) {
+        let syms = &self.syms;
+        println!("{:?}", syms);
+    }
+}
 
-    for sym in syms {
-        if sym.unwrap().0.contains("sym"){
+impl BinSymbols for &MachO<'_> {
+    fn get_symbols(self) {
+        let syms = self.symbols.iter().nth(0);
+        for sym in syms.unwrap().iter()  {
             println!("{:?}", sym.unwrap().0);
         }
     }
@@ -124,7 +132,7 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
     match Object::parse(&buffer)? {
         Object::Elf(elf) => {
             println!("{:?}", elf.section_headers);
-            get_fe_symbols(&elf);
+            &elf.get_symbols();
             Ok(Binary {
                 filename: file.display().to_string(),
                 binarytype: BinType::Elf,
@@ -144,7 +152,7 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
         },
         Object::Mach(mach) => match mach{
             Mach::Binary(macho) => {
-                get_macho_symbols(&macho);
+                &macho.get_symbols();
                 //println!("{:?}", macho.symbols);
                 Ok(Binary {
                     filename: file.display().to_string(),

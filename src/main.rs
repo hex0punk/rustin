@@ -6,6 +6,7 @@ use goblin::mach::{Mach, MachO};
 use std::env;
 use std::path::Path;
 use std::fs;
+use goblin::pe::PE;
 
 #[derive(Debug)]
 pub enum BinType {
@@ -109,6 +110,17 @@ impl Binary {
 
 pub trait BinSymbols {
     fn get_symbols(self);
+}
+
+pub trait BinSections {
+    fn get_sections(self);
+}
+
+impl BinSymbols for &PE<'_> {
+    fn get_symbols(self) {
+        let syms = &self.syms;
+        println!("{:?}", syms);
+    }
 }
 
 impl BinSymbols for &Elf<'_> {

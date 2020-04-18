@@ -105,7 +105,7 @@ impl Binary {
 }
 
 fn get_fe_symbols(elf: &Elf) {
-    let syms = e    lf.syms;
+    let syms = &elf.syms;
     println!("{:?}", syms);
 }
 
@@ -113,7 +113,7 @@ fn get_macho_symbols(macho: &MachO) {
     let syms = macho.symbols();
 
     for sym in syms {
-        println!("{:?}", sym);
+        println!("{:?}", sym.unwrap().1.type_str());
     }
 }
 
@@ -142,8 +142,8 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
         },
         Object::Mach(mach) => match mach{
             Mach::Binary(macho) => {
-                get_macho_symbols(&elf);
-                println!("{:?}", macho.symbols);
+                get_macho_symbols(&macho);
+                //println!("{:?}", macho.symbols);
                 Ok(Binary {
                     filename: file.display().to_string(),
                     binarytype: BinType::Mach,

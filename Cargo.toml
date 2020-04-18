@@ -1,0 +1,11 @@
+[package]
+name = "nvbin"
+version = "0.1.0"
+authors = ["Alex Useche <alex.useche@nvisium.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+elfkit = "0.0.7"
+goblin = "0.2.1"

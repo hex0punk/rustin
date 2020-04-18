@@ -120,9 +120,16 @@ impl BinSymbols for &Elf<'_> {
 
 impl BinSymbols for &MachO<'_> {
     fn get_symbols(self) {
-        let syms = self.symbols.iter().nth(0);
+        let syms = *self.symbols.iter().nth(0).unwrap().n_type;
         for sym in syms.unwrap().iter()  {
-            println!("{:?}", sym.unwrap().0);
+            //print!("{:?}   ", sym.unwrap().1.type_str());
+            print!("{:?}   ", sym.unwrap());
+            // if sym.unwrap().0.contains("github"){
+            //     print!("{:?}   ", sym.unwrap().0);
+            // }
+            // Symbol {
+            //     symboltype: sym.unwrap().1.n_type,
+            // }
         }
     }
 }
@@ -150,7 +157,7 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
                 symbols: None,
             })
         },
-        Object::Mach(mach) => match mach{
+        Object::Mach(mach) => match mach {
             Mach::Binary(macho) => {
                 &macho.get_symbols();
                 //println!("{:?}", macho.symbols);

@@ -59,7 +59,7 @@ pub enum Relro {
 pub struct Symbol {
     pub symboltype: SymType,
     pub name: String,
-    pub addr: u64,
+    pub addr: usize,
 }
 
 // std::string             filename;
@@ -116,10 +116,35 @@ pub trait BinSections {
     fn get_sections(self);
 }
 
-impl BinSymbols for &PE<'_> {
-    fn get_symbols(self) {
-        let syms = &self.syms;
-        println!("{:?}", syms);
+// impl BinSymbols for &PE<'_> {
+//     fn get_symbols(self) {
+//
+//         let syms = self.exports;
+//         // println!("{:?}", syms);
+//     }
+// }
+
+impl BinSections for &Elf<'_> {
+    fn get_sections(self) {
+        let sections = &self.section_headers;
+        //println!("{:?}", sections);
+    }
+}
+
+impl BinSections for &MachO<'_> {
+    fn get_sections(self) {
+        let segments = &self.segments;
+        for seg in segments {
+            let sections = segments.sections();
+            //sections is a dynamic iterator, so this needs to be mutable
+            let mut unboxed_iter = sections;
+            for sec_iter in unboxed_iter {
+                println!("one");
+                for sec in sec_iter{
+                    println!("{:?}", sec.unwrap().0);
+                }
+            }
+        }
     }
 }
 
@@ -131,18 +156,19 @@ impl BinSymbols for &Elf<'_> {
 }
 
 impl BinSymbols for &MachO<'_> {
-    fn get_symbols(self) {
-        let syms = *self.symbols.iter().nth(0).unwrap().n_type;
+    fn get_symbols(self) -> Vec<Symbol> {
+        let syms = self.symbols.iter().nth(0);
+        let mut result: Vec<Symbol> = Vec::new();
         for sym in syms.unwrap().iter()  {
-            //print!("{:?}   ", sym.unwrap().1.type_str());
-            print!("{:?}   ", sym.unwrap());
-            // if sym.unwrap().0.contains("github"){
-            //     print!("{:?}   ", sym.unwrap().0);
-            // }
-            // Symbol {
-            //     symboltype: sym.unwrap().1.n_type,
-            // }
+            result.push(
+                Symbol{
+                    symboltype: SymType::Func, // TODO: not accurate
+                    name: sym.unwrap().0.parse().unwrap(),
+                    addr: sym.unwrap().1.n_strx,
+                }
+            );
         }
+        result
     }
 }
 
@@ -172,6 +198,7 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
         Object::Mach(mach) => match mach {
             Mach::Binary(macho) => {
                 &macho.get_symbols();
+                &macho.get_sections();
                 //println!("{:?}", macho.symbols);
                 Ok(Binary {
                     filename: file.display().to_string(),

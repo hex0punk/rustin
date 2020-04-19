@@ -64,5 +64,6 @@ fn main() {
     
     let file_path = Path::new(args[1].as_str());
     let bin = load_binary(file_path);
-    println!("{:?}", bin);
+    let j = serde_json::to_string(&bin);
+    println!("{:?}", j);
 }

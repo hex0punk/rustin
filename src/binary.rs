@@ -3,7 +3,9 @@ use goblin::error::Error;
 use goblin::elf::Elf;
 use goblin::mach::{Mach, MachO};
 
-#[derive(Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug)]
 pub enum BinType {
     Elf,
     PE,
@@ -12,34 +14,34 @@ pub enum BinType {
     Unknown,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum BinArch {
     X86,
     X64,
     None,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum SecType {
     Code,
     Data,
     None,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum SymType {
     Func,
     Unk,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum PIE {
     DSO,
     PIE,
     None,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Relro {
     Partial,
     Full,
@@ -50,7 +52,7 @@ pub enum Relro {
 // std::string name;
 // uint64_t    addr;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Symbol {
     pub symboltype: SymType,
     pub name: String,
@@ -64,7 +66,7 @@ pub struct Symbol {
 // uint64_t      size;
 // uint8_t       *bytes;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Section {
     pub name: String,
     pub sectype: u32, //TODO: Parse hex value and match to a SecType
@@ -105,7 +107,7 @@ pub struct Section {
 // pub struct ElfBin(Elf);
 // pub struct ElfMachO(MachO);
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Binary{
     pub filename: String,
     pub binarytype: BinType,

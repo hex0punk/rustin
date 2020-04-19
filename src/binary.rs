@@ -1,5 +1,4 @@
-use goblin::{error, Object};
-use goblin::error::Error;
+use goblin::{Object};
 use goblin::elf::Elf;
 use goblin::mach::{Mach, MachO};
 

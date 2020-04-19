@@ -17,36 +17,34 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
     let buffer = fs::read(file)?;
     match Object::parse(&buffer)? {
         Object::Elf(elf) => {
-            //println!("{:?}", elf.section_headers);
-            &elf.get_symbols();
             Ok(Binary {
                 filename: file.display().to_string(),
                 binarytype: BinType::Elf,
                 binaryarch: if elf.is_64 { BinArch::X64 } else { BinArch::X86 },
                 entry: elf.entry,
-                symbols: None,
+                symbols: elf.get_symbols(),
+                sections: elf.get_sections(),
             })
         },
-        Object::PE(pe) => {
-            Ok(Binary {
-                filename: file.display().to_string(),
-                binarytype: BinType::PE,
-                binaryarch: if pe.is_64 { BinArch::X64 } else { BinArch::X86 },
-                entry: pe.entry as u64,
-                symbols: None,
-            })
-        },
+        // Object::PE(pe) => {
+        //     Ok(Binary {
+        //         filename: file.display().to_string(),
+        //         binarytype: BinType::PE,
+        //         binaryarch: if pe.is_64 { BinArch::X64 } else { BinArch::X86 },
+        //         entry: pe.entry as u64,
+        //         symbols: None,
+        //         sections:
+        //     })
+        // },
         Object::Mach(mach) => match mach {
             Mach::Binary(macho) => {
-                &macho.get_symbols();
-                &macho.get_sections();
-                //println!("{:?}", macho.symbols);
                 Ok(Binary {
                     filename: file.display().to_string(),
                     binarytype: BinType::Mach,
                     binaryarch: if macho.is_64 { BinArch::X64 } else { BinArch::X86 },
                     entry: macho.entry,
-                    symbols: None,
+                    symbols:  macho.get_symbols(),
+                    sections: macho.get_sections(),
                 })
             }
             _ => {

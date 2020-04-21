@@ -1,6 +1,6 @@
-use goblin::{Object};
 use goblin::elf::Elf;
 use goblin::mach::{Mach, MachO};
+use goblin::Object;
 
 use serde::{Deserialize, Serialize};
 
@@ -107,7 +107,7 @@ pub struct Section {
 // pub struct ElfMachO(MachO);
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Binary{
+pub struct Binary {
     pub filename: String,
     pub binarytype: BinType,
     pub binaryarch: BinArch,
@@ -128,15 +128,13 @@ impl BinSections for &Elf<'_> {
     fn get_sections(self) -> Vec<Section> {
         let sections = &self.section_headers;
         let mut result: Vec<Section> = Vec::new();
-        for sec in sections{
-            result.push(
-                Section {
-                    name: "".to_string(), // TODO: get from sec.sh_name,
-                    sectype: sec.sh_type, // TODO: Parse as SecType
-                    vma: sec.sh_addr,
-                    size: sec.sh_size,
-                }
-            );
+        for sec in sections {
+            result.push(Section {
+                name: "".to_string(), // TODO: get from sec.sh_name,
+                sectype: sec.sh_type, // TODO: Parse as SecType
+                vma: sec.sh_addr,
+                size: sec.sh_size,
+            });
         }
         result
     }
@@ -151,17 +149,14 @@ impl BinSections for &MachO<'_> {
             //sections is a dynamic iterator, so this needs to be mutable
             let mut unboxed_iter = sections;
             for sec_iter in unboxed_iter {
-                for sec in sec_iter{
+                for sec in sec_iter {
                     let sec = sec.unwrap();
-                    println!("{:?}", sec.0);
-                    result.push(
-                        Section {
-                            name: sec.0.name().unwrap().to_string(),
-                            sectype: 0, //TODO: Need to find a way to get type of MachO section
-                            vma: sec.0.addr,
-                            size: sec.0.size,
-                        }
-                    );
+                    result.push(Section {
+                        name: sec.0.name().unwrap().to_string(),
+                        sectype: 0, //TODO: Need to find a way to get type of MachO section
+                        vma: sec.0.addr,
+                        size: sec.0.size,
+                    });
                 }
             }
         }
@@ -170,7 +165,7 @@ impl BinSections for &MachO<'_> {
 }
 
 impl BinSymbols for &Elf<'_> {
-    fn get_symbols(self) -> Vec<Symbol>  {
+    fn get_symbols(self) -> Vec<Symbol> {
         let strtab = &self.strtab;
         let dynstrtab = &self.dynstrtab;
         let syms = &self.syms;
@@ -180,31 +175,31 @@ impl BinSymbols for &Elf<'_> {
 
         // Get strippable symbols
         for sym in syms.iter() {
-            //println!("test");
-            // println!("{:?}", sym);
-            result.push(
-                Symbol{
-                    symboltype: if sym.is_function() {SymType::Func} else {SymType::Unk},// TODO: not accurate
-                    name: strtab.get(sym.st_name).unwrap().unwrap().to_string(),
-                    addr: sym.st_name,
-                }
-            );
+            result.push(Symbol {
+                symboltype: if sym.is_function() {
+                    SymType::Func
+                } else {
+                    SymType::Unk
+                }, // TODO: not accurate
+                name: strtab.get(sym.st_name).unwrap().unwrap().to_string(),
+                addr: sym.st_name,
+            });
 
-            if sym.is_function(){
+            if sym.is_function() {
                 let strsym = strtab.get(sym.st_name);
-                println!("{:?}", strsym);
-                println!("{:?}\n", sym);
             }
         }
         // Get dynamic symbols
-        for sym in dynsyms.iter(){
-            result.push(
-                Symbol{
-                    symboltype: if sym.is_function() {SymType::Func} else {SymType::Unk},// TODO: not accurate
-                    name: dynstrtab.get(sym.st_name).unwrap().unwrap().to_string(),
-                    addr: sym.st_name,
-                }
-            );
+        for sym in dynsyms.iter() {
+            result.push(Symbol {
+                symboltype: if sym.is_function() {
+                    SymType::Func
+                } else {
+                    SymType::Unk
+                }, // TODO: not accurate
+                name: dynstrtab.get(sym.st_name).unwrap().unwrap().to_string(),
+                addr: sym.st_name,
+            });
         }
         result
     }
@@ -214,15 +209,13 @@ impl BinSymbols for &MachO<'_> {
     fn get_symbols(self) -> Vec<Symbol> {
         let syms = self.symbols.iter().nth(0);
         let mut result: Vec<Symbol> = Vec::new();
-        for sym in syms.unwrap().iter()  {
+        for sym in syms.unwrap().iter() {
             let s = &sym.unwrap();
-            result.push(
-                Symbol{
-                    symboltype: SymType::Func, // TODO: not accurate
-                    name: s.0.to_string(),
-                    addr: s.1.n_strx,
-                }
-            );
+            result.push(Symbol {
+                symboltype: SymType::Func, // TODO: not accurate
+                name: s.0.to_string(),
+                addr: s.1.n_strx,
+            });
         }
         result
     }

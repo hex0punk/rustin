@@ -430,6 +430,7 @@ dependencies = [
 name = "nvbin"
 version = "0.1.0"
 dependencies = [
+ "clap",
  "elfkit",
  "goblin",
  "serde",

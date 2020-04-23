@@ -73,6 +73,7 @@ fn main() {
         .arg(
             Arg::with_name("path")
                 .short("p")
+                .required(true)
                 .long("path")
                 .takes_value(true)
                 .help("path to binary"),
@@ -81,7 +82,6 @@ fn main() {
             Arg::with_name("sections")
                 .short("h")
                 .long("sections")
-                .takes_value(false)
                 .help("Display sections"),
         )
         .arg(
@@ -106,12 +106,10 @@ fn main() {
     println!("Entry: {:#x?} \n\n", &bin.entry);
 
     if display_headers {
-        let j = serde_json::to_string_pretty(&bin.sections);
-        println!("{}", j.unwrap());
+        bin.print_sections();
     }
 
     if display_symbols {
-        let j = serde_json::to_string_pretty(&bin.symbols);
-        println!("{}", j.unwrap());
+        bin.print_symbols();
     }
 }

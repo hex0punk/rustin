@@ -103,8 +103,8 @@ pub struct Section {
 //     pub relro: Relro,
 // }
 
-// pub struct ElfBin(Elf);
-// pub struct ElfMachO(MachO);
+// pub struct ElfBin<'a>(Elf<'a>);
+// pub struct MachBin<'a>(MachO<'a>);
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Binary {
@@ -114,6 +114,20 @@ pub struct Binary {
     pub entry: u64,
     pub symbols: Vec<Symbol>,
     pub sections: Vec<Section>,
+}
+
+impl Binary {
+    pub fn print_symbols(&self){
+        for sym in &self.symbols{
+            println!("  {: <40} {:#5x?}{:>10}{:<?}", sym.name, sym.addr, "", sym.symboltype);
+        }
+    }
+
+    pub fn print_sections(&self){
+        for sec in &self.sections{
+            println!("{:#x?} {:<20?} {:<20} {:10?}", sec.vma, sec.size, sec.name, sec.sectype);
+        }
+    }
 }
 
 pub trait BinSymbols {
@@ -130,7 +144,7 @@ impl BinSections for &Elf<'_> {
         let mut result: Vec<Section> = Vec::new();
         for sec in sections {
             result.push(Section {
-                name: "".to_string(), // TODO: get from sec.sh_name,
+                name: self.shdr_strtab.get(sec.sh_name).unwrap().unwrap().to_string(), // TODO: get from sec.sh_name,
                 sectype: sec.sh_type, // TODO: Parse as SecType
                 vma: sec.sh_addr,
                 size: sec.sh_size,

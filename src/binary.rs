@@ -1,11 +1,9 @@
 use goblin::elf::Elf;
-use goblin::mach::{Mach, MachO};
-use goblin::Object;
+use goblin::mach::MachO;
 
 use serde::{Deserialize, Serialize};
 
 pub mod protections;
-use protections::*;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum BinType {
@@ -68,39 +66,6 @@ pub struct Section {
     pub vma: u64,
     pub size: u64,
 }
-
-// std::string             filename;
-// BinaryType              type;
-// std::string             type_str;
-// BinaryArch              arch;
-// std::string             arch_str;
-// unsigned                bits;
-// uint64_t                entry;
-// std::vector<Section>    sections;
-// std::vector<Symbol>     symbols;
-
-// pub struct Protections {
-//     /// Stack Canary (*CFLAGS=*`-fstack-protector*`)
-//     pub canary: bool,
-//     /// Clang Control Flow Integrity (*CFLAGS=*`-fsanitize=cfi-*`)
-//     pub clang_cfi: bool,
-//     /// Clang SafeStack (*CFLAGS=*`-fsanitize=safe-stack`)
-//     pub clang_safestack: bool,
-//     /// Fortify (*CFLAGS=*`-D_FORTIFY_SOURCE`)
-//     pub fortify: bool,
-//     /// Fortified functions
-//     pub fortified: u32,
-//     //fortifiable:  Option<Vec<OsString>>,
-//     /// No Execute
-//     pub nx: bool,
-//     /// Position Inpendent Executable (*CFLAGS=*`-pie -fPIE`)
-//     pub pie: PIE,
-//     /// Relocation Read-Only
-//     pub relro: Relro,
-// }
-
-// pub struct ElfBin<'a>(Elf<'a>);
-// pub struct MachBin<'a>(MachO<'a>);
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Binary {
@@ -166,20 +131,18 @@ impl BinSections for &MachO<'_> {
     fn get_sections(self) -> Vec<Section> {
         let segments = &self.segments;
         let mut result: Vec<Section> = Vec::new();
-        for seg in segments {
-            let sections = segments.sections();
-            //sections is a dynamic iterator, so this needs to be mutable
-            let mut unboxed_iter = sections;
-            for sec_iter in unboxed_iter {
-                for sec in sec_iter {
-                    let sec = sec.unwrap();
-                    result.push(Section {
-                        name: sec.0.name().unwrap().to_string(),
-                        sectype: 0, //TODO: Need to find a way to get type of MachO section
-                        vma: sec.0.addr,
-                        size: sec.0.size,
-                    });
-                }
+        let sections = segments.sections();
+        //sections is a dynamic iterator, so this needs to be mutable
+        let unboxed_iter = sections;
+        for sec_iter in unboxed_iter {
+            for sec in sec_iter {
+                let sec = sec.unwrap();
+                result.push(Section {
+                    name: sec.0.name().unwrap().to_string(),
+                    sectype: 0, //TODO: Need to find a way to get type of MachO section
+                    vma: sec.0.addr,
+                    size: sec.0.size,
+                });
             }
         }
         result
@@ -206,10 +169,6 @@ impl BinSymbols for &Elf<'_> {
                 name: strtab.get(sym.st_name).unwrap().unwrap().to_string(),
                 addr: sym.st_name,
             });
-
-            if sym.is_function() {
-                let strsym = strtab.get(sym.st_name);
-            }
         }
         // Get dynamic symbols
         for sym in dynsyms.iter() {

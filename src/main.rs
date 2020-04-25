@@ -1,14 +1,10 @@
-use goblin::elf::Elf;
 use goblin::error::Error;
-use goblin::mach::{Mach, MachO};
-use goblin::{error, Object};
+use goblin::mach::Mach;
+use goblin::Object;
 
 use clap::{App, Arg};
 
-use goblin::pe::PE;
-use std::env;
 use std::fs;
-use std::ops::Deref;
 use std::path::Path;
 
 mod binary;
@@ -53,7 +49,7 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
                 entry: macho.entry,
                 symbols: macho.get_symbols(),
                 sections: macho.get_sections(),
-                protections: protections::ProtectionsCheck::parse_machO(&macho)
+                protections: protections::ProtectionsCheck::parse_macho(&macho)
             }),
             _ => {
                 let err =

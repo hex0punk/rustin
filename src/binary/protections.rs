@@ -1,15 +1,13 @@
 use goblin;
 use goblin::elf::Elf;
-use goblin::mach::load_command::CommandVariant;
 use goblin::mach::MachO;
 use goblin::elf::dynamic::{
-    DF_1_PIE, DF_BIND_NOW, DT_FLAGS, DT_FLAGS_1, DT_RPATH, DT_RUNPATH,
+    DF_BIND_NOW, DT_FLAGS, DT_FLAGS_1,
 };
 use goblin::elf::header::ET_DYN;
 use goblin::elf::program_header::{PF_X, PT_GNU_RELRO, PT_GNU_STACK};
 
 use serde::{Deserialize, Serialize};
-use crate::binary::BinType::Mach;
 
 const MH_ALLOW_STACK_EXECUTION: u32 = 0x0002_0000;
 const MH_PIE: u32 = 0x0020_0000;
@@ -70,7 +68,7 @@ impl ProtectionsCheck {
             relro: elf.has_relro(),
         })
     }
-    pub fn parse_machO(macho: &MachO) -> BinaryProtections{
+    pub fn parse_macho(macho: &MachO) -> BinaryProtections{
         BinaryProtections::MachOProtections(MachOProtections{
             canary: macho.has_canary(),
             nx: macho.has_nx(),

@@ -1,11 +1,9 @@
 use goblin;
-use goblin::elf::Elf;
-use goblin::mach::MachO;
-use goblin::elf::dynamic::{
-    DF_BIND_NOW, DT_FLAGS, DT_FLAGS_1,
-};
+use goblin::elf::dynamic::{DF_BIND_NOW, DT_FLAGS, DT_FLAGS_1};
 use goblin::elf::header::ET_DYN;
 use goblin::elf::program_header::{PF_X, PT_GNU_RELRO, PT_GNU_STACK};
+use goblin::elf::Elf;
+use goblin::mach::MachO;
 
 use serde::{Deserialize, Serialize};
 
@@ -40,7 +38,7 @@ pub struct MachOProtections {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum BinaryProtections {
     ElfProtections(ElfProtections),
-    MachOProtections(MachOProtections)
+    MachOProtections(MachOProtections),
 }
 
 pub trait BinProtectionsChecks {
@@ -60,16 +58,16 @@ pub trait MachOProtectionsChecks {
 
 pub struct ProtectionsCheck;
 impl ProtectionsCheck {
-    pub fn parse_elf(elf: &Elf) -> BinaryProtections{
-        BinaryProtections::ElfProtections(ElfProtections{
+    pub fn parse_elf(elf: &Elf) -> BinaryProtections {
+        BinaryProtections::ElfProtections(ElfProtections {
             canary: elf.has_canary(),
             nx: elf.has_nx(),
             pie: elf.has_pie(),
             relro: elf.has_relro(),
         })
     }
-    pub fn parse_macho(macho: &MachO) -> BinaryProtections{
-        BinaryProtections::MachOProtections(MachOProtections{
+    pub fn parse_macho(macho: &MachO) -> BinaryProtections {
+        BinaryProtections::MachOProtections(MachOProtections {
             canary: macho.has_canary(),
             nx: macho.has_nx(),
             pie: macho.has_pie(),
@@ -98,7 +96,6 @@ impl BinProtectionsChecks for MachO<'_> {
     fn has_pie(&self) -> bool {
         matches!(self.header.flags & MH_PIE, x if x != 0)
     }
-
 }
 
 impl MachOProtectionsChecks for MachO<'_> {
@@ -160,8 +157,7 @@ impl ElfProtectionsChecks for Elf<'_> {
                 if let Some(dynamic) = &self.dynamic {
                     for dyns in &dynamic.dyns {
                         if dyns.d_tag == DT_FLAGS
-                            || dyns.d_tag == DT_FLAGS_1
-                            && DF_BIND_NOW & dyns.d_val == 0
+                            || dyns.d_tag == DT_FLAGS_1 && DF_BIND_NOW & dyns.d_val == 0
                         {
                             return Relro::Full;
                         }
@@ -173,4 +169,3 @@ impl ElfProtectionsChecks for Elf<'_> {
         Relro::None
     }
 }
-

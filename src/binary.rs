@@ -80,15 +80,17 @@ pub struct Binary {
 
 impl Binary {
     pub fn print_symbols(&self) {
+        println!("{:>6} {:>42} {:>5}", "Name", "Address", "Type");
         for sym in &self.symbols {
             println!(
-                "  {: <40} {:#5x?}{:>10}{:<?}",
-                sym.name, sym.addr, "", sym.symboltype
+                "  {:40} {:#5x?}    {:>70?}",
+                sym.name, sym.addr, sym.symboltype
             );
         }
     }
 
     pub fn print_sections(&self) {
+        println!("{} {:>5} {:>20} {:>29}", "Address", "Size", "Name", "Type");
         for sec in &self.sections {
             println!(
                 "{:#x?} {:<20?} {:<20} {:10?}",
@@ -115,8 +117,8 @@ impl BinSections for &Elf<'_> {
                 name: self
                     .shdr_strtab
                     .get(sec.sh_name)
-                    .unwrap()
-                    .unwrap()
+                    .expect("Error getting section")
+                    .expect("Error obtaining section name")
                     .to_string(), // TODO: get from sec.sh_name,
                 sectype: sec.sh_type, // TODO: Parse as SecType
                 vma: sec.sh_addr,
@@ -136,10 +138,17 @@ impl BinSections for &MachO<'_> {
         let unboxed_iter = sections;
         for sec_iter in unboxed_iter {
             for sec in sec_iter {
-                let sec = sec.unwrap();
+                let sec = match sec {
+                    Ok(sec) => sec,
+                    Err(_err) => continue,
+                };
+                let name = match sec.0.name() {
+                    Ok(name) => name.to_string(),
+                    Err(_err) => "Invalid Name".to_string(),
+                };
                 result.push(Section {
-                    name: sec.0.name().unwrap().to_string(),
-                    sectype: 0, //TODO: Need to find a way to get type of MachO section
+                    name,
+                    sectype: sec.0.flags, //TODO: Need to find a way to get type of MachO section
                     vma: sec.0.addr,
                     size: sec.0.size,
                 });
@@ -152,7 +161,6 @@ impl BinSections for &MachO<'_> {
 impl BinSymbols for &Elf<'_> {
     fn get_symbols(self) -> Vec<Symbol> {
         let strtab = &self.strtab;
-        let dynstrtab = &self.dynstrtab;
         let syms = &self.syms;
         let dynsyms = &self.dynsyms;
 
@@ -160,25 +168,33 @@ impl BinSymbols for &Elf<'_> {
 
         // Get strippable symbols
         for sym in syms.iter() {
+            let name = strtab
+                .get(sym.st_name)
+                .expect("")
+                .expect("Error getting section name");
             result.push(Symbol {
                 symboltype: if sym.is_function() {
                     SymType::Func
                 } else {
                     SymType::Unk
                 }, // TODO: not accurate
-                name: strtab.get(sym.st_name).unwrap().unwrap().to_string(),
+                name: name.to_string(),
                 addr: sym.st_name,
             });
         }
         // Get dynamic symbols
         for sym in dynsyms.iter() {
+            let name = strtab
+                .get(sym.st_name)
+                .expect("")
+                .expect("Error getting section name");
             result.push(Symbol {
                 symboltype: if sym.is_function() {
                     SymType::Func
                 } else {
                     SymType::Unk
                 }, // TODO: not accurate
-                name: dynstrtab.get(sym.st_name).unwrap().unwrap().to_string(),
+                name: name.to_string(),
                 addr: sym.st_name,
             });
         }
@@ -190,8 +206,9 @@ impl BinSymbols for &MachO<'_> {
     fn get_symbols(self) -> Vec<Symbol> {
         let syms = self.symbols.iter().nth(0);
         let mut result: Vec<Symbol> = Vec::new();
-        for sym in syms.unwrap().iter() {
-            let s = &sym.unwrap();
+        let iter = syms.expect("Error obtaining symbol iterator");
+        for sym in iter {
+            let s = &sym.expect("Error obtaining symbol list");
             result.push(Symbol {
                 symboltype: SymType::Func, // TODO: not accurate
                 name: s.0.to_string(),

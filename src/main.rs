@@ -8,8 +8,8 @@ use std::fs;
 use std::path::Path;
 
 mod binary;
-use binary::*;
 use binary::protections;
+use binary::*;
 
 fn load_binary(file: &Path) -> Result<Binary, Error> {
     let buffer = fs::read(file)?;
@@ -25,7 +25,7 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
             entry: elf.entry,
             symbols: elf.get_symbols(),
             sections: elf.get_sections(),
-            protections: protections::ProtectionsCheck::parse_elf(&elf)
+            protections: protections::ProtectionsCheck::parse_elf(&elf),
         }),
         // Object::PE(pe) => {
         //     Ok(Binary {
@@ -49,7 +49,7 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
                 entry: macho.entry,
                 symbols: macho.get_symbols(),
                 sections: macho.get_sections(),
-                protections: protections::ProtectionsCheck::parse_macho(&macho)
+                protections: protections::ProtectionsCheck::parse_macho(&macho),
             }),
             _ => {
                 let err =
@@ -91,14 +91,18 @@ fn main() {
                 .help("Display symbols"),
         )
         .get_matches();
-
-    let path = matches.value_of("path").unwrap();
+    
+    let path = matches.value_of("path").expect("Error parsing path");
     let display_headers = matches.is_present("sections");
     let display_symbols = matches.is_present("symbols");
 
     let file_path = Path::new(path);
     let bin = load_binary(file_path);
-    let bin = bin.unwrap();
+    let bin = match bin {
+        Ok(bin) => bin,
+        Err(err) => panic!("Problem opening the file: {:?}", err),
+    };
+
     println!("Filename: {:?}", &bin.filename);
     println!("Arch: {:?}", &bin.binaryarch);
     println!("Type: {:?}", &bin.binarytype);

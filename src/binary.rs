@@ -4,6 +4,9 @@ use goblin::Object;
 
 use serde::{Deserialize, Serialize};
 
+pub mod protections;
+use protections::*;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum BinType {
     Elf,
@@ -37,13 +40,6 @@ pub enum SymType {
 pub enum PIE {
     DSO,
     PIE,
-    None,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum Relro {
-    Partial,
-    Full,
     None,
 }
 
@@ -114,18 +110,25 @@ pub struct Binary {
     pub entry: u64,
     pub symbols: Vec<Symbol>,
     pub sections: Vec<Section>,
+    pub protections: protections::BinaryProtections,
 }
 
 impl Binary {
-    pub fn print_symbols(&self){
-        for sym in &self.symbols{
-            println!("  {: <40} {:#5x?}{:>10}{:<?}", sym.name, sym.addr, "", sym.symboltype);
+    pub fn print_symbols(&self) {
+        for sym in &self.symbols {
+            println!(
+                "  {: <40} {:#5x?}{:>10}{:<?}",
+                sym.name, sym.addr, "", sym.symboltype
+            );
         }
     }
 
-    pub fn print_sections(&self){
-        for sec in &self.sections{
-            println!("{:#x?} {:<20?} {:<20} {:10?}", sec.vma, sec.size, sec.name, sec.sectype);
+    pub fn print_sections(&self) {
+        for sec in &self.sections {
+            println!(
+                "{:#x?} {:<20?} {:<20} {:10?}",
+                sec.vma, sec.size, sec.name, sec.sectype
+            );
         }
     }
 }
@@ -144,7 +147,12 @@ impl BinSections for &Elf<'_> {
         let mut result: Vec<Section> = Vec::new();
         for sec in sections {
             result.push(Section {
-                name: self.shdr_strtab.get(sec.sh_name).unwrap().unwrap().to_string(), // TODO: get from sec.sh_name,
+                name: self
+                    .shdr_strtab
+                    .get(sec.sh_name)
+                    .unwrap()
+                    .unwrap()
+                    .to_string(), // TODO: get from sec.sh_name,
                 sectype: sec.sh_type, // TODO: Parse as SecType
                 vma: sec.sh_addr,
                 size: sec.sh_size,

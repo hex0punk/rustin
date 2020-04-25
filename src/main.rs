@@ -13,6 +13,7 @@ use std::path::Path;
 
 mod binary;
 use binary::*;
+use binary::protections;
 
 fn load_binary(file: &Path) -> Result<Binary, Error> {
     let buffer = fs::read(file)?;
@@ -28,6 +29,7 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
             entry: elf.entry,
             symbols: elf.get_symbols(),
             sections: elf.get_sections(),
+            protections: protections::ProtectionsCheck::parse_elf(&elf)
         }),
         // Object::PE(pe) => {
         //     Ok(Binary {
@@ -51,6 +53,7 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
                 entry: macho.entry,
                 symbols: macho.get_symbols(),
                 sections: macho.get_sections(),
+                protections: protections::ProtectionsCheck::parse_machO(&macho)
             }),
             _ => {
                 let err =
@@ -103,7 +106,8 @@ fn main() {
     println!("Filename: {:?}", &bin.filename);
     println!("Arch: {:?}", &bin.binaryarch);
     println!("Type: {:?}", &bin.binarytype);
-    println!("Entry: {:#x?} \n\n", &bin.entry);
+    println!("Entry: {:#x?} \n", &bin.entry);
+    println!("Protections: {:#?}\n\n", &bin.protections);
 
     if display_headers {
         bin.print_sections();

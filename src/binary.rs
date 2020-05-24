@@ -80,6 +80,7 @@ pub struct Binary {
     pub symbols: Vec<Symbol>,
     pub sections: Vec<Section>,
     pub protections: protections::BinaryProtections,
+    pub libraries: Vec<String>,
 }
 
 impl Binary {
@@ -103,6 +104,12 @@ impl Binary {
                 "{:#010x?} {:#10x?} {:#20} {:10}",
                 sec.vma, sec.size, sec.name, sec.sectype
             );
+        }
+    }
+
+    pub fn print_libraries(&self){
+        for lib in &self.libraries {
+            println!("{:?}", lib);
         }
     }
 }

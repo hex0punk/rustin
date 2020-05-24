@@ -26,6 +26,7 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
             symbols: elf.get_symbols(),
             sections: elf.get_sections(),
             protections: protections::ProtectionsCheck::parse_elf(&elf),
+            libraries: elf.libraries.iter().map(|s| s.to_string()).collect() // need to learn more abo0ut lifetimes
         }),
         // Object::PE(pe) => {
         //     Ok(Binary {
@@ -50,6 +51,7 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
                 symbols: macho.get_symbols(),
                 sections: macho.get_sections(),
                 protections: protections::ProtectionsCheck::parse_macho(&macho),
+                libraries: macho.libs.iter().map(|s| s.to_string()).collect(), // need to learn more abo0ut lifetimes
             }),
             _ => {
                 let err =
@@ -79,13 +81,19 @@ fn main() {
         )
         .arg(
             Arg::with_name("sections")
-                .short("h")
+                .short("s")
                 .long("sections")
                 .help("Display sections"),
         )
         .arg(
+            Arg::with_name("libraries")
+                .short("l")
+                .long("libs")
+                .help("Display libraries"),
+        )
+        .arg(
             Arg::with_name("symbols")
-                .short("s")
+                .short("S")
                 .long("symbols")
                 .takes_value(false)
                 .help("Display symbols"),
@@ -95,6 +103,7 @@ fn main() {
     let path = matches.value_of("path").expect("Error parsing path");
     let display_headers = matches.is_present("sections");
     let display_symbols = matches.is_present("symbols");
+    let display_libs = matches.is_present("libraries");
 
     let file_path = Path::new(path);
     let bin = load_binary(file_path);
@@ -115,5 +124,9 @@ fn main() {
 
     if display_symbols {
         bin.print_symbols();
+    }
+
+    if display_libs {
+        bin.print_libraries();
     }
 }

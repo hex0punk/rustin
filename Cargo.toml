@@ -8,8 +8,9 @@ edition = "2018"
 
 [dependencies]
 elfkit = "0.0.7"
-goblin = "0.2.1"
+goblin = "0.2.3"
 serde = { version = "1.0.106", features = ["derive"] }
 serde_derive = "1.0.106"
 serde_json = "1.0.51"
 clap = "2.33.0"
+regex = "1"

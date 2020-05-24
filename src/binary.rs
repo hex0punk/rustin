@@ -84,11 +84,11 @@ pub struct Binary {
 
 impl Binary {
     pub fn print_symbols(&self) {
-        println!("{:10} {:>42} {:>5}", "VAddress", "Type", "Name");
-        println!("{:-<1$}", "", 60);
+        println!("{0:<10} {1:<} {2:>50}", "VAddress", "Type", "Name");
+        println!("{:-<1$}", "", 70);
         for sym in &self.symbols {
             println!(
-                "{:#010x?} {:#70?} {:10}",
+                "{:#010x?} {:>20?} {:>50}",
                 sym.addr, sym.symboltype, sym.name,
             );
         }

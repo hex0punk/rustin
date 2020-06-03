@@ -13,7 +13,7 @@ This is a simple binary loader written in Rust with the help of [goblin](https:/
 
 ## What can I do?
 
-Only ELF and MachO binaries are supported at the moment
+Only ELF and MachO binaries are supported at the moment. Additionally, this poorly named tools will list binary protections and detect languages (rust, go, swift, objc, c).
 
 - `-s` to list section
 - `-S` to list symbols

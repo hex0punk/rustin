@@ -120,12 +120,15 @@ fn main() {
         Err(err) => panic!("Problem opening the file: {:?}", err),
     };
 
-    println!("Filename: {:?}", &bin.filename);
-    println!("Arch: {:?}", &bin.binaryarch);
-    println!("Type: {:?}", &bin.binarytype);
-    println!("Language: {}", &bin.language);
-    println!("Entry: {:#x?} \n", &bin.entry);
-    println!("Protections: {:#?}\n\n", &bin.protections);
+    println!("{:<14} {}","filename:", &bin.filename);
+    println!("{:<14} {}", "arch:", format!("{:?}", &bin.binaryarch));
+    println!("{:<14} {}", "type:", format!("{:?}", &bin.binarytype));
+    println!("{:<14} {}", "language:", &bin.language);
+    println!("{:<14} {:#x}", "entry:", &bin.entry);
+
+    bin.protections.print_protections();
+
+    println!("\n\n");
 
     if display_headers {
         bin.print_sections();

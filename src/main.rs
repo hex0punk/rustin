@@ -14,20 +14,24 @@ use binary::*;
 fn load_binary(file: &Path) -> Result<Binary, Error> {
     let buffer = fs::read(file)?;
     match Object::parse(&buffer)? {
-        Object::Elf(elf) => Ok(Binary {
-            filename: file.display().to_string(),
-            binarytype: BinType::Elf,
-            binaryarch: if elf.is_64 {
-                BinArch::X64
-            } else {
-                BinArch::X86
-            },
-            entry: elf.entry,
-            symbols: elf.get_symbols(),
-            sections: elf.get_sections(),
-            protections: protections::ProtectionsCheck::parse_elf(&elf),
-            libraries: elf.libraries.iter().map(|s| s.to_string()).collect() // need to learn more abo0ut lifetimes
-        }),
+        Object::Elf(elf) => {
+            let symbols = elf.get_symbols();
+            Ok(Binary {
+                filename: file.display().to_string(),
+                binarytype: BinType::Elf,
+                binaryarch: if elf.is_64 {
+                    BinArch::X64
+                } else {
+                    BinArch::X86
+                },
+                entry: elf.entry,
+                language: Binary::get_language(&symbols), //borrowed
+                symbols, //moved (so this must come after
+                sections: elf.get_sections(),
+                protections: protections::ProtectionsCheck::parse_elf(&elf),
+                libraries: elf.libraries.iter().map(|s| s.to_string()).collect(),
+            })
+        }
         // Object::PE(pe) => {
         //     Ok(Binary {
         //         filename: file.display().to_string(),
@@ -39,20 +43,24 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
         //     })
         // },
         Object::Mach(mach) => match mach {
-            Mach::Binary(macho) => Ok(Binary {
-                filename: file.display().to_string(),
-                binarytype: BinType::Mach,
-                binaryarch: if macho.is_64 {
-                    BinArch::X64
-                } else {
-                    BinArch::X86
-                },
-                entry: macho.entry,
-                symbols: macho.get_symbols(),
-                sections: macho.get_sections(),
-                protections: protections::ProtectionsCheck::parse_macho(&macho),
-                libraries: macho.libs.iter().map(|s| s.to_string()).collect(), // need to learn more abo0ut lifetimes
-            }),
+            Mach::Binary(macho) => {
+                let symbols = macho.get_symbols();
+                Ok(Binary {
+                    filename: file.display().to_string(),
+                    binarytype: BinType::Mach,
+                    binaryarch: if macho.is_64 {
+                        BinArch::X64
+                    } else {
+                        BinArch::X86
+                    },
+                    entry: macho.entry,
+                    language: Binary::get_language(&symbols), //borrowed
+                    symbols, //moved
+                    sections: macho.get_sections(),
+                    protections: protections::ProtectionsCheck::parse_macho(&macho),
+                    libraries: macho.libs.iter().map(|s| s.to_string()).collect(),
+                })
+            }
             _ => {
                 let err =
                     std::io::Error::new(std::io::ErrorKind::Other, "Binary type not supported");
@@ -99,7 +107,7 @@ fn main() {
                 .help("Display symbols"),
         )
         .get_matches();
-    
+
     let path = matches.value_of("path").expect("Error parsing path");
     let display_headers = matches.is_present("sections");
     let display_symbols = matches.is_present("symbols");
@@ -115,6 +123,7 @@ fn main() {
     println!("Filename: {:?}", &bin.filename);
     println!("Arch: {:?}", &bin.binaryarch);
     println!("Type: {:?}", &bin.binarytype);
+    println!("Language: {}", &bin.language);
     println!("Entry: {:#x?} \n", &bin.entry);
     println!("Protections: {:#?}\n\n", &bin.protections);
 

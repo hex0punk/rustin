@@ -1,7 +1,7 @@
-use goblin::elf::Elf;
-use goblin::mach::MachO;
 use goblin::elf::section_header::sht_to_str;
+use goblin::elf::Elf;
 use goblin::mach::constants as mach_constants;
+use goblin::mach::MachO;
 
 use std::str;
 
@@ -77,6 +77,7 @@ pub struct Binary {
     pub binarytype: BinType,
     pub binaryarch: BinArch,
     pub entry: u64,
+    pub language: String,
     pub symbols: Vec<Symbol>,
     pub sections: Vec<Section>,
     pub protections: protections::BinaryProtections,
@@ -107,10 +108,30 @@ impl Binary {
         }
     }
 
-    pub fn print_libraries(&self){
+    pub fn print_libraries(&self) {
         for lib in &self.libraries {
             println!("{:?}", lib);
         }
+    }
+
+    //static
+    pub fn get_language(symbols:&Vec<Symbol>) -> String {
+        for sym in symbols {
+            if sym.name.contains("_$LT$") {
+                return "rust".to_string();
+            } else if sym.name.len() >= 3 && &sym.name[..3] == "go." {
+                return "go".to_string();
+            } else if sym.name.len() >= 6 && &sym.name[..6] == "_OBJC_" {
+                return "objc".to_string();
+            } else if sym.name.contains("swift_once") {
+                return "swift".to_string();
+            } else if sym.name.len() >= 2 && &sym.name[..2] == "_Z" {
+                return "c".to_string();
+            } else if sym.name.len() >= 3 && &sym.name[..3] == "__Z" {
+                return "c".to_string();
+            }
+        }
+        "c".to_string()
     }
 }
 
@@ -234,12 +255,12 @@ impl BinSymbols for &MachO<'_> {
     }
 }
 
-fn s_type_to_str(sec:u32) -> &'static str {
-    match sec{
+fn s_type_to_str(sec: u32) -> &'static str {
+    match sec {
         mach_constants::S_REGULAR => "S_REGULAR",
         mach_constants::S_ZEROFILL => "S_ZEROFILL",
         mach_constants::S_NON_LAZY_SYMBOL_POINTERS => "S_NON_LAZY_SYMBOL_POINTERS",
         mach_constants::S_SYMBOL_STUBS => "S_SYMBOL_STUBS",
-        _ => "UNKNOWN"
+        _ => "UNKNOWN",
     }
 }

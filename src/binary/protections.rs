@@ -5,6 +5,7 @@ use goblin::elf::program_header::{PF_X, PT_GNU_RELRO, PT_GNU_STACK};
 use goblin::elf::Elf;
 use goblin::mach::MachO;
 
+use crate::binary::BinSections;
 use serde::{Deserialize, Serialize};
 
 const MH_ALLOW_STACK_EXECUTION: u32 = 0x0002_0000;
@@ -24,6 +25,7 @@ pub struct ElfProtections {
     pub nx: bool,
     pub pie: bool,
     pub relro: Relro,
+    pub stripped: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -33,6 +35,7 @@ pub struct MachOProtections {
     pub pie: bool,
     pub nx_heap: bool,
     pub arc: bool,
+    pub stripped: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -45,6 +48,7 @@ pub trait BinProtectionsChecks {
     fn has_canary(&self) -> bool;
     fn has_nx(&self) -> bool;
     fn has_pie(&self) -> bool;
+    fn is_stripped(&self) -> bool;
 }
 
 pub trait ElfProtectionsChecks {
@@ -64,6 +68,7 @@ impl ProtectionsCheck {
             nx: elf.has_nx(),
             pie: elf.has_pie(),
             relro: elf.has_relro(),
+            stripped: elf.is_stripped(),
         })
     }
     pub fn parse_macho(macho: &MachO) -> BinaryProtections {
@@ -73,6 +78,7 @@ impl ProtectionsCheck {
             pie: macho.has_pie(),
             nx_heap: macho.has_nx_heap(),
             arc: macho.has_arc(),
+            stripped: macho.is_stripped(),
         })
     }
 }
@@ -83,6 +89,7 @@ impl BinProtectionsChecks for MachO<'_> {
             for import in imports.iter() {
                 match import.name {
                     "___stack_chk_fail" => return true,
+                    "__stack_smash_handler" => return true,
                     "___stack_chk_guard" => return true,
                     _ => continue,
                 }
@@ -95,6 +102,12 @@ impl BinProtectionsChecks for MachO<'_> {
     }
     fn has_pie(&self) -> bool {
         matches!(self.header.flags & MH_PIE, x if x != 0)
+    }
+    fn is_stripped(&self) -> bool {
+        !self
+            .get_sections()
+            .iter()
+            .any(|x| x.name == "__zdebug_info")
     }
 }
 
@@ -121,6 +134,7 @@ impl BinProtectionsChecks for Elf<'_> {
                 if let Ok(name) = name {
                     match name {
                         "__stack_chk_fail" => return true,
+                        "__stack_smash_handler" => return true,
                         "__intel_security_cookie" => return true,
                         _ => continue,
                     }
@@ -147,6 +161,10 @@ impl BinProtectionsChecks for Elf<'_> {
             return true;
         }
         return false;
+    }
+
+    fn is_stripped(&self) -> bool {
+        !self.get_sections().iter().any(|x| x.name == ".symtab")
     }
 }
 

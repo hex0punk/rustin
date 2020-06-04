@@ -3,8 +3,10 @@ use goblin::elf::Elf;
 use goblin::mach::constants as mach_constants;
 use goblin::mach::MachO;
 
+use std::fmt;
 use std::str;
 
+use serde::export::Formatter;
 use serde::{Deserialize, Serialize};
 
 pub mod protections;
@@ -18,7 +20,8 @@ pub enum BinType {
     Unknown,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+//Created custom impl for debug below
+#[derive(Serialize, Deserialize)]
 pub enum BinArch {
     X86,
     X64,
@@ -82,9 +85,19 @@ pub struct Binary {
     pub sections: Vec<Section>,
     pub protections: protections::BinaryProtections,
     pub libraries: Vec<String>,
+    pub machine: String,
 }
 
 impl Binary {
+    pub fn print_properties(&self) {
+        println!("{:<14} {}", "filename:", &self.filename);
+        println!("{:<14} {}", "arch:", format!("{:?}", &self.binaryarch));
+        println!("{:<14} {}", "type:", format!("{:?}", &self.binarytype));
+        println!("{:<14} {}", "machine:", &self.machine);
+        println!("{:<14} {}", "language:", &self.language);
+        println!("{:<14} {:#x}", "entry:", &self.entry);
+    }
+
     pub fn print_symbols(&self) {
         println!("{0:<10} {1:<} {2:>50}", "VAddress", "Type", "Name");
         println!("{:-<1$}", "", 70);
@@ -115,23 +128,31 @@ impl Binary {
     }
 
     //static
-    pub fn get_language(symbols:&Vec<Symbol>) -> String {
+    pub fn get_language(symbols: &Vec<Symbol>) -> String {
+        let mut result = "unknown or c";
         for sym in symbols {
             if sym.name.contains("_$LT$") {
-                return "rust".to_string();
+                result = "rust";
+                break;
             } else if sym.name.len() >= 3 && &sym.name[..3] == "go." {
-                return "go".to_string();
-            } else if sym.name.len() >= 6 && &sym.name[..6] == "_OBJC_" {
-                return "objc".to_string();
+                result = "go";
+                break;
             } else if sym.name.contains("swift_once") {
-                return "swift".to_string();
+                result = "swift";
+                break;
+            } else if sym.name.len() >= 6 && &sym.name[..6] == "_OBJC_" {
+                // Have to make sure it isn't swift, so can't return
+                result = "objc";
+            } else if sym.name.len() >= 6 && &sym.name[..6] == "_objc_" {
+                // Have to make sure it isn't swift, so can't return
+                result = "objc";
             } else if sym.name.len() >= 2 && &sym.name[..2] == "_Z" {
-                return "c".to_string();
+                result = "c";
             } else if sym.name.len() >= 3 && &sym.name[..3] == "__Z" {
-                return "c".to_string();
+                result = "c";
             }
         }
-        "c".to_string()
+        result.to_string()
     }
 }
 
@@ -213,7 +234,7 @@ impl BinSymbols for &Elf<'_> {
                     SymType::Func
                 } else {
                     SymType::Unk
-                }, // TODO: not accurate
+                },
                 name: name.to_string(),
                 addr: sym.st_name,
             });
@@ -229,7 +250,7 @@ impl BinSymbols for &Elf<'_> {
                     SymType::Func
                 } else {
                     SymType::Unk
-                }, // TODO: not accurate
+                },
                 name: name.to_string(),
                 addr: sym.st_name,
             });
@@ -252,6 +273,16 @@ impl BinSymbols for &MachO<'_> {
             });
         }
         result
+    }
+}
+
+impl fmt::Debug for BinArch {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match *self {
+            BinArch::X64 => write!(f, "x64"),
+            BinArch::X86 => write!(f, "x86"),
+            BinArch::None => write!(f, "unknown"),
+        }
     }
 }
 

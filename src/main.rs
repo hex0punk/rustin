@@ -1,4 +1,6 @@
+use goblin::elf::header::machine_to_str;
 use goblin::error::Error;
+use goblin::mach::constants::cputype::get_arch_name_from_types;
 use goblin::mach::Mach;
 use goblin::Object;
 
@@ -8,7 +10,6 @@ use std::fs;
 use std::path::Path;
 
 mod binary;
-use binary::protections;
 use binary::*;
 
 fn load_binary(file: &Path) -> Result<Binary, Error> {
@@ -26,10 +27,11 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
                 },
                 entry: elf.entry,
                 language: Binary::get_language(&symbols), //borrowed
-                symbols, //moved (so this must come after
+                symbols,                                  //moved (so this must come after
                 sections: elf.get_sections(),
                 protections: protections::ProtectionsCheck::parse_elf(&elf),
                 libraries: elf.libraries.iter().map(|s| s.to_string()).collect(),
+                machine: machine_to_str(elf.header.e_machine).to_string(),
             })
         }
         // Object::PE(pe) => {
@@ -55,10 +57,17 @@ fn load_binary(file: &Path) -> Result<Binary, Error> {
                     },
                     entry: macho.entry,
                     language: Binary::get_language(&symbols), //borrowed
-                    symbols, //moved
+                    symbols,                                  //moved
                     sections: macho.get_sections(),
                     protections: protections::ProtectionsCheck::parse_macho(&macho),
                     libraries: macho.libs.iter().map(|s| s.to_string()).collect(),
+                    machine: match get_arch_name_from_types(
+                        macho.header.cputype,
+                        macho.header.cpusubtype,
+                    ) {
+                        Some(m_type) => m_type.to_string(),
+                        None => "unknown".to_string(),
+                    },
                 })
             }
             _ => {
@@ -120,11 +129,7 @@ fn main() {
         Err(err) => panic!("Problem opening the file: {:?}", err),
     };
 
-    println!("{:<14} {}","filename:", &bin.filename);
-    println!("{:<14} {}", "arch:", format!("{:?}", &bin.binaryarch));
-    println!("{:<14} {}", "type:", format!("{:?}", &bin.binarytype));
-    println!("{:<14} {}", "language:", &bin.language);
-    println!("{:<14} {:#x}", "entry:", &bin.entry);
+    bin.print_properties();
 
     bin.protections.print_protections();
 

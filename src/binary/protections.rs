@@ -62,23 +62,23 @@ pub trait MachOProtectionsChecks {
 
 pub struct ProtectionsCheck;
 
-impl BinaryProtections{
-    pub fn print_protections(&self){
-        match &self{
+impl BinaryProtections {
+    pub fn print_protections(&self) {
+        match &self {
             &BinaryProtections::ElfProtections(elf) => {
                 println!("{:<14} {}", "canary:", elf.canary);
-                println!("{:<14} {}","nx:", elf.nx);
+                println!("{:<14} {}", "nx:", elf.nx);
                 println!("{:<14} {}", "pie:", elf.pie);
                 println!("{:<14} {}", "relro:", format!("{:?}", elf.relro));
-                println!("{:<14} {}","stripped:" ,elf.stripped);
-            },
+                println!("{:<14} {}", "stripped:", elf.stripped);
+            }
             &BinaryProtections::MachOProtections(macho) => {
                 println!("{:<14} {}", "canary:", macho.canary);
-                println!("{:<14} {}","nx:", macho.nx);
+                println!("{:<14} {}", "nx:", macho.nx);
                 println!("{:<14} {}", "pie:", macho.pie);
                 println!("{:<14} {}", "nx heap:", macho.nx_heap);
                 println!("{:<14} {}", "arc:", macho.arc);
-                println!("{:<14} {}","stripped:" ,macho.stripped);
+                println!("{:<14} {}", "stripped:", macho.stripped);
             }
         }
     }
